@@ -11,7 +11,7 @@ description: >
   by country, genre and language, or through Most played, Top voted,
   Trending and an admin-curated Favorites folder.
 category: "Channels"
-owner: "your-github-user"
+owner: "digibaro"
 artifacts:
 - "Jellyfin.Plugin.RadioBrowser.dll"
 changelog: >
