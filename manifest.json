@@ -3,6 +3,14 @@
     "guid": "077e1652-2e0c-461a-a6b4-cd3cb6e6c628",
     "versions": [
       {
+        "version": "1.0.5.0",
+        "changelog": "1.0.5: Changed build.yaml. 1.0.4: No relay needed; refresh task; user access note. 1.0.3: Relay asks stations like an audio player. 1.0.2: Plugin image, Favorites folder, localized folder names, music album layout option, more reliable stream URLs.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/digibaro/jellyfin-plugin-radiobrowser/releases/download/v1.0.5/internet-radio_1.0.5.0.zip",
+        "checksum": "7c8007fd597082d3fd7bbe920e8fb332",
+        "timestamp": "2026-09-24T08:28:14Z"
+      },
+      {
         "version": "1.0.4.0",
         "changelog": "1.0.4: No relay needed; refresh task; user access note. 1.0.3: Relay asks stations like an audio player. 1.0.2: Plugin image, Favorites folder, localized folder names, music album layout option, more reliable stream URLs.",
         "targetAbi": "12.0.0.0",
