@@ -1,0 +1,31 @@
+---
+name: "Internet Radio (Radio Browser)"
+guid: "077e1652-2e0c-461a-a6b4-cd3cb6e6c628"
+version: "1.0.4.0"
+targetAbi: "12.0.0.0"
+framework: "net10.0"
+overview: "Browse and play tens of thousands of internet radio stations"
+description: >
+  Adds an "Internet Radio" entry next to Live TV. Stations come from the
+  free, community-maintained radio-browser.info directory and can be browsed
+  by country, genre and language, or through Most played, Top voted,
+  Trending and an admin-curated Favorites folder.
+category: "Channels"
+owner: "your-github-user"
+artifacts:
+- "Jellyfin.Plugin.RadioBrowser.dll"
+changelog: >
+  1.0.4: Stations always use their own link (the Jellyfin apps fetch it through
+  the server, so no relay is needed); relay settings removed, old relay links
+  keep working. New task "Refresh Internet Radio stations", run automatically
+  after saving settings. Settings page explains user access.
+  1.0.3: The stream relay uses its own HTTP client and asks like an audio
+  player (no JSON Accept header, no compression), and logs what each station
+  returns. Fixes relayed HTTP stations that answered Jellyfin with non-audio.
+  1.0.2: Plugin image and home tile image, Favorites folder, folder names in
+  English/Dutch/German, optional music album layout, more reliable stream
+  URLs for redirecting services such as StreamTheWorld.
+  1.0.1: Fix "fatal player error" in the web client. Stations are always
+  played directly, because Jellyfin 12 cannot transcode live audio to HLS.
+  New "Public server address" setting lets Jellyfin pass on plain-HTTP
+  stations for HTTPS sites through a signed relay.

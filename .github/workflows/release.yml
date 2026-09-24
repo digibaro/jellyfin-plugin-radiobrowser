@@ -1,0 +1,73 @@
+# Builds and publishes a release when a version tag is pushed, e.g.:
+#   git tag v1.0.5
+#   git push origin v1.0.5
+# Then updates manifest.json on the default branch, so Jellyfin servers that added
+# this repository see the new version.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version from tag
+        id: v
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then VERSION="$VERSION.0"; fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not a version like v1.0.5"; exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "zip=internet-radio_$VERSION.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: >
+          dotnet publish Jellyfin.Plugin.RadioBrowser/Jellyfin.Plugin.RadioBrowser.csproj
+          -c Release -o publish
+          -p:Version=${{ steps.v.outputs.version }}
+          -p:AssemblyVersion=${{ steps.v.outputs.version }}
+          -p:FileVersion=${{ steps.v.outputs.version }}
+
+      - name: Package
+        run: |
+          python3 .github/scripts/release.py meta --file publish/meta.json \
+            --version "${{ steps.v.outputs.version }}" \
+            --owner "${{ github.repository_owner }}" \
+            --notes release-notes.md
+          cd publish
+          zip -j "../${{ steps.v.outputs.zip }}" Jellyfin.Plugin.RadioBrowser.dll meta.json thumb.png
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.v.outputs.zip }}
+          body_path: release-notes.md
+
+      - name: Update manifest.json
+        env:
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          cp publish/meta.json /tmp/meta.json
+          git fetch origin "$BRANCH"
+          git checkout -B "$BRANCH" "origin/$BRANCH"
+          python3 .github/scripts/release.py manifest --manifest manifest.json \
+            --meta /tmp/meta.json --zip "${{ steps.v.outputs.zip }}" \
+            --repo "${{ github.repository }}" --branch "$BRANCH" --tag "$GITHUB_REF_NAME"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "Add ${{ steps.v.outputs.version }} to manifest.json"
+          git push origin "$BRANCH"

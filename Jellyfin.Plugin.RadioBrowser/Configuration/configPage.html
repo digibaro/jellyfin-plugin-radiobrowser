@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Internet Radio</title>
+</head>
+<body>
+    <div id="RadioBrowserConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="RadioBrowserConfigForm">
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">Internet Radio</h2>
+                        <p>Stations come from <a is="emby-linkbutton" class="button-link" href="https://www.radio-browser.info" target="_blank" rel="noopener">radio-browser.info</a>. Listeners find them under "Internet Radio" in the main menu and on the home screen. Saved changes are applied to all stored stations by the task "Refresh Internet Radio stations", which starts automatically.</p>
+                        <p>Users who are not administrators need access to the channel: <i>Dashboard → Users → user → Access</i>, then turn on <i>Enable access to all channels</i> or tick <i>Internet Radio</i>.</p>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Favorite stations</h3>
+                        <div class="fieldDescription">Shown in the Favorites folder, in this order. Every listener sees this folder. Leave empty to hide it.</div>
+                        <div id="rbFeaturedList" class="paperList" style="margin: 1em 0;"></div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="rbSearchName">Find a station to add</label>
+                            <input id="rbSearchName" type="text" is="emby-input" autocomplete="off" />
+                            <div class="fieldDescription">Type at least two letters of the name, then press Search.</div>
+                        </div>
+                        <button is="emby-button" type="button" id="rbSearchButton" class="raised emby-button">
+                            <span>Search</span>
+                        </button>
+                        <div id="rbSearchStatus" class="fieldDescription" role="status" style="margin-top: 1em;"></div>
+                        <div id="rbSearchResults" class="paperList" style="margin: 1em 0;"></div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Listings</h3>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="LocalCountryCode">Local country code</label>
+                            <input id="LocalCountryCode" type="text" is="emby-input" maxlength="2" />
+                            <div class="fieldDescription">Two-letter code such as DE, NL or US. Adds a "Local stations" folder. Leave empty to hide it.</div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MaxStationsPerFolder">Stations per folder</label>
+                            <input id="MaxStationsPerFolder" type="number" is="emby-input" min="10" max="2000" />
+                            <div class="fieldDescription">Most listened stations are listed first.</div>
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MaxGenres">Genres to list</label>
+                            <input id="MaxGenres" type="number" is="emby-input" min="10" max="1000" />
+                        </div>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="MinStationsPerCategory">Minimum stations per country, genre or language</label>
+                            <input id="MinStationsPerCategory" type="number" is="emby-input" min="1" max="1000" />
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ShowStationListsAsAlbums" type="checkbox" is="emby-checkbox" />
+                                <span>Show station lists as music albums</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Opens lists of stations on the music page with Play and Shuffle, without the video filters of the standard folder page. Station logos are not shown in that list.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="HideBrokenStations" type="checkbox" is="emby-checkbox" />
+                                <span>Hide stations that are currently offline</span>
+                            </label>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ExcludeHls" type="checkbox" is="emby-checkbox" />
+                                <span>Hide HLS stations</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">HLS stations always play through the server, which uses more server resources.</div>
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Playback</h3>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input id="ReportClicks" type="checkbox" is="emby-checkbox" />
+                                <span>Report plays to radio-browser.info</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Sends only the station id. Keeps the directory's popularity rankings accurate.</div>
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3 class="sectionTitle">Advanced</h3>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="ApiServerOverride">API server</label>
+                            <input id="ApiServerOverride" type="url" is="emby-input" placeholder="https://de1.api.radio-browser.info" />
+                            <div class="fieldDescription">Leave empty to pick a server automatically. Set this only for a self-hosted mirror.</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var pluginId = '077e1652-2e0c-461a-a6b4-cd3cb6e6c628';
+                var page = document.querySelector('#RadioBrowserConfigPage');
+                var featured = []; // [{ Uuid, Name, Country, Codec, Bitrate }]
+
+                function describe(station) {
+                    var parts = [];
+                    if (station.Country) { parts.push(station.Country); }
+                    if (station.Codec) { parts.push(station.Codec + (station.Bitrate > 0 ? ' ' + station.Bitrate + ' kbit/s' : '')); }
+                    return parts.join(', ');
+                }
+
+                function iconButton(icon, title, onClick) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'paper-icon-button-light';
+                    button.title = title;
+                    button.setAttribute('aria-label', title);
+                    var span = document.createElement('span');
+                    span.className = 'material-icons ' + icon;
+                    span.setAttribute('aria-hidden', 'true');
+                    button.appendChild(span);
+                    button.addEventListener('click', onClick);
+                    return button;
+                }
+
+                function stationRow(station, buttons) {
+                    var row = document.createElement('div');
+                    row.className = 'listItem listItem-border';
+                    var body = document.createElement('div');
+                    body.className = 'listItemBody two-line';
+                    var title = document.createElement('div');
+                    title.className = 'listItemBodyText';
+                    title.textContent = station.Name;
+                    var sub = document.createElement('div');
+                    sub.className = 'listItemBodyText secondary';
+                    sub.textContent = describe(station);
+                    body.appendChild(title);
+                    body.appendChild(sub);
+                    row.appendChild(body);
+                    buttons.forEach(function (b) { row.appendChild(b); });
+                    return row;
+                }
+
+                function renderFeatured() {
+                    var list = page.querySelector('#rbFeaturedList');
+                    list.innerHTML = '';
+                    if (featured.length === 0) {
+                        var empty = document.createElement('div');
+                        empty.className = 'fieldDescription';
+                        empty.textContent = 'No favorite stations yet. Search below to add some.';
+                        list.appendChild(empty);
+                        return;
+                    }
+
+                    featured.forEach(function (station, index) {
+                        var buttons = [];
+                        if (index > 0) {
+                            buttons.push(iconButton('arrow_upward', 'Move up', function () {
+                                featured.splice(index - 1, 0, featured.splice(index, 1)[0]);
+                                renderFeatured();
+                            }));
+                        }
+                        buttons.push(iconButton('delete', 'Remove', function () {
+                            featured.splice(index, 1);
+                            renderFeatured();
+                        }));
+                        list.appendChild(stationRow(station, buttons));
+                    });
+                }
+
+                function renderResults(stations) {
+                    var results = page.querySelector('#rbSearchResults');
+                    results.innerHTML = '';
+                    stations.forEach(function (station) {
+                        var already = featured.some(function (f) { return f.Uuid === station.Uuid; });
+                        var buttons = already ? [] : [iconButton('add', 'Add to favorites', function () {
+                            featured.push(station);
+                            renderFeatured();
+                            renderResults(stations);
+                        })];
+                        results.appendChild(stationRow(station, buttons));
+                    });
+                }
+
+                function search() {
+                    var name = page.querySelector('#rbSearchName').value.trim();
+                    var status = page.querySelector('#rbSearchStatus');
+                    if (name.length < 2) {
+                        status.textContent = 'Enter at least two letters.';
+                        return;
+                    }
+
+                    status.textContent = 'Searching…';
+                    ApiClient.getJSON(ApiClient.getUrl('RadioBrowser/Search', { name: name, limit: 30 }))
+                        .then(function (stations) {
+                            status.textContent = stations.length === 0
+                                ? 'No stations match "' + name + '". Try a shorter name.'
+                                : stations.length + ' stations found.';
+                            renderResults(stations);
+                        }, function () {
+                            status.textContent = 'The station directory could not be reached. Try again in a moment.';
+                        });
+                }
+
+                function loadFeatured(uuids) {
+                    featured = uuids.map(function (u) { return { Uuid: u, Name: u, Country: '', Codec: '', Bitrate: 0 }; });
+                    renderFeatured();
+                    if (uuids.length === 0) { return; }
+
+                    ApiClient.getJSON(ApiClient.getUrl('RadioBrowser/Stations', { uuids: uuids.join(',') }))
+                        .then(function (stations) {
+                            // Keep unknown UUIDs so a temporary outage does not silently drop them.
+                            featured = featured.map(function (f) {
+                                return stations.find(function (s) { return s.Uuid === f.Uuid; }) || f;
+                            });
+                            renderFeatured();
+                        });
+                }
+
+                page.addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#LocalCountryCode').value = config.LocalCountryCode || '';
+                        page.querySelector('#MaxStationsPerFolder').value = config.MaxStationsPerFolder;
+                        page.querySelector('#MaxGenres').value = config.MaxGenres;
+                        page.querySelector('#MinStationsPerCategory').value = config.MinStationsPerCategory;
+                        page.querySelector('#HideBrokenStations').checked = config.HideBrokenStations;
+                        page.querySelector('#ExcludeHls').checked = config.ExcludeHls;
+                        page.querySelector('#ShowStationListsAsAlbums').checked = config.ShowStationListsAsAlbums;
+                        page.querySelector('#ReportClicks').checked = config.ReportClicks;
+                        page.querySelector('#ApiServerOverride').value = config.ApiServerOverride || '';
+                        loadFeatured(config.FeaturedStationUuids || []);
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+                page.querySelector('#rbSearchButton').addEventListener('click', search);
+                page.querySelector('#rbSearchName').addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        search();
+                    }
+                });
+
+                page.querySelector('#RadioBrowserConfigForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.LocalCountryCode = page.querySelector('#LocalCountryCode').value.trim().toUpperCase();
+                        config.MaxStationsPerFolder = parseInt(page.querySelector('#MaxStationsPerFolder').value, 10) || 300;
+                        config.MaxGenres = parseInt(page.querySelector('#MaxGenres').value, 10) || 150;
+                        config.MinStationsPerCategory = parseInt(page.querySelector('#MinStationsPerCategory').value, 10) || 5;
+                        config.HideBrokenStations = page.querySelector('#HideBrokenStations').checked;
+                        config.ExcludeHls = page.querySelector('#ExcludeHls').checked;
+                        config.ShowStationListsAsAlbums = page.querySelector('#ShowStationListsAsAlbums').checked;
+                        config.ReportClicks = page.querySelector('#ReportClicks').checked;
+                        config.ApiServerOverride = page.querySelector('#ApiServerOverride').value.trim();
+                        config.FeaturedStationUuids = featured.map(function (f) { return f.Uuid; });
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>

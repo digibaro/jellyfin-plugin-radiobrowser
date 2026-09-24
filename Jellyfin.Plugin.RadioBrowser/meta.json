@@ -1,0 +1,16 @@
+{
+  "category": "Channels",
+  "changelog": "1.0.4: No relay needed; refresh task; user access note. 1.0.3: Relay asks stations like an audio player. 1.0.2: Plugin image, Favorites folder, localized folder names, music album layout option, more reliable stream URLs.",
+  "description": "Adds an Internet Radio entry next to Live TV. Stations come from the free, community-maintained radio-browser.info directory and can be browsed by country, genre and language.",
+  "guid": "077e1652-2e0c-461a-a6b4-cd3cb6e6c628",
+  "name": "Internet Radio",
+  "overview": "Browse and play internet radio stations",
+  "owner": "your-github-user",
+  "targetAbi": "12.0.0.0",
+  "timestamp": "2026-09-24T00:00:00Z",
+  "version": "1.0.4.0",
+  "status": "Active",
+  "autoUpdate": false,
+  "imagePath": "thumb.png",
+  "assemblies": [ "Jellyfin.Plugin.RadioBrowser.dll" ]
+}
